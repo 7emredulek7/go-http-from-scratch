@@ -1,0 +1,55 @@
+package headers
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestHeaderParse(t *testing.T) {
+	// Test: Valid single header
+	headers := NewHeaders()
+	data := []byte("Host: localhost:42069\r\n\r\n")
+	n, done, err := headers.Parse(data)
+	require.NoError(t, err)
+	require.NotNil(t, headers)
+	value, ok := headers.Get("Host")
+	assert.True(t, ok)
+	assert.Equal(t, "localhost:42069", value)
+	assert.Equal(t, 23, n)
+	assert.True(t, done)
+
+	// Test: Invalid spacing header
+	headers = NewHeaders()
+	data = []byte("       Host : localhost:42069       \r\n\r\n")
+
+	n, done, err = headers.Parse(data)
+	require.Error(t, err)
+	assert.Equal(t, 0, n)
+	assert.False(t, done)
+
+	// Test: Duplicate header key appends values
+	headers = NewHeaders()
+	headers["host"] = "example.com"
+	data = []byte("Host: localhost:42069\r\n\r\n")
+	n, done, err = headers.Parse(data)
+	require.NoError(t, err)
+	value, ok = headers.Get("Host")
+	assert.True(t, ok)
+	assert.Equal(t, "example.com, localhost:42069", value)
+	assert.Equal(t, 23, n)
+	assert.True(t, done)
+
+	// Test: Valid  header
+	headers = NewHeaders()
+	data = []byte("H©st: localhost:42069\r\n\r\n")
+	n, done, err = headers.Parse(data)
+	require.Error(t, err)
+	require.NotNil(t, headers)
+	value, ok = headers.Get("H©st")
+	assert.False(t, ok)
+	assert.Equal(t, "", value)
+	assert.Equal(t, 0, n)
+	assert.False(t, done)
+}

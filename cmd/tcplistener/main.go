@@ -29,6 +29,12 @@ func main() {
 		fmt.Printf("- Target: %s\n", req.RequestLine.RequestTarget)
 		fmt.Printf("- Version: %s\n", req.RequestLine.HttpVersion)
 
+		headers := req.Headers.GetAll()
+		fmt.Printf("Headers:\n")
+		for key, value := range headers {
+			fmt.Printf("- %s: %s\n", key, value)
+		}
+
 	}
 
 }
