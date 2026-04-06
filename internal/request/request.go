@@ -5,6 +5,7 @@ import (
 	"httpserver/internal/headers"
 	"httpserver/internal/requestline"
 	"io"
+	"strconv"
 )
 
 var SEPERATOR = []byte("\r\n")
@@ -16,12 +17,14 @@ type ParserState int
 const (
 	INIT            ParserState = 0
 	PARSING_HEADERS ParserState = 1
-	DONE            ParserState = 2
+	PARSING_BODY    ParserState = 2
+	DONE            ParserState = 3
 )
 
 type Request struct {
 	RequestLine requestline.RequestLine
 	Headers     headers.Headers
+	Body        []byte
 	State       ParserState
 }
 
@@ -29,6 +32,7 @@ func newRequest() *Request {
 	return &Request{
 		State:   INIT,
 		Headers: headers.NewHeaders(),
+		Body:    []byte(""),
 	}
 }
 
@@ -53,9 +57,34 @@ func (r *Request) parse(data []byte) (int, error) {
 			return 0, err
 		}
 		if done {
-			r.State = DONE
+			r.State = PARSING_BODY
+			return n + len(SEPERATOR), nil
 		}
 		return n, nil
+	case PARSING_BODY:
+		contentLength, ok := r.Headers.Get("Content-Length")
+
+		if !ok || contentLength == "0" {
+			r.State = DONE
+			return 0, nil
+		}
+		length, err := strconv.Atoi(contentLength)
+		if err != nil {
+			return 0, fmt.Errorf("invalid content length")
+		}
+
+		readBody := min(length-len(r.Body), len(data))
+		r.Body = append(r.Body, data[:readBody]...)
+
+		if len(r.Body) > length {
+			return 0, fmt.Errorf("body length exceeds content length")
+		}
+
+		if len(r.Body) == length {
+			r.State = DONE
+		}
+
+		return readBody, nil
 	case DONE:
 		return 0, fmt.Errorf("error: trying to read data in a done state")
 	default:
@@ -77,6 +106,15 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 
 		n, err := reader.Read(buf[readToIndex:])
 		if err == io.EOF {
+			if request.State == PARSING_BODY {
+				contentLength, ok := request.Headers.Get("Content-Length")
+				if ok && contentLength != "0" {
+					length, _ := strconv.Atoi(contentLength)
+					if len(request.Body) < length {
+						return nil, fmt.Errorf("body length shorter than content length")
+					}
+				}
+			}
 			request.State = DONE
 			break
 		}
