@@ -3,7 +3,6 @@ package request
 import (
 	"fmt"
 	"httpserver/internal/headers"
-	"httpserver/internal/requestline"
 	"io"
 	"strconv"
 )
@@ -22,7 +21,7 @@ const (
 )
 
 type Request struct {
-	RequestLine requestline.RequestLine
+	RequestLine RequestLine
 	Headers     headers.Headers
 	Body        []byte
 	State       ParserState
@@ -39,7 +38,7 @@ func newRequest() *Request {
 func (r *Request) parse(data []byte) (int, error) {
 	switch r.State {
 	case INIT:
-		requestLine, n, err := requestline.Parse(data)
+		requestLine, n, err := ParseRequestLine(data)
 		if err != nil {
 			return 0, err
 		}
@@ -120,13 +119,19 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		}
 
 		readToIndex += n
-		nParsed, err := request.parse(buf[:readToIndex])
-		if err != nil {
-			return nil, err
-		}
+		for request.State != DONE {
+			nParsed, err := request.parse(buf[:readToIndex])
+			if err != nil {
+				return nil, err
+			}
 
-		copy(buf, buf[nParsed:])
-		readToIndex -= nParsed
+			copy(buf, buf[nParsed:])
+			readToIndex -= nParsed
+
+			if nParsed == 0 {
+				break
+			}
+		}
 	}
 	return request, nil
 }

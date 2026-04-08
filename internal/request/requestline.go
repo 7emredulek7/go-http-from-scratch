@@ -1,12 +1,10 @@
-package requestline
+package request
 
 import (
 	"bytes"
 	"fmt"
 	"strings"
 )
-
-var SEPERATOR = []byte("\r\n")
 
 type RequestLine struct {
 	Method        string
@@ -50,7 +48,7 @@ func NewRequestLine(requestLineParts []string) (*RequestLine, error) {
 	}, nil
 }
 
-func Parse(data []byte) (*RequestLine, int, error) {
+func ParseRequestLine(data []byte) (*RequestLine, int, error) {
 	endOfRequestLineIdx := bytes.Index(data, SEPERATOR)
 	if endOfRequestLineIdx == -1 {
 		return nil, 0, nil

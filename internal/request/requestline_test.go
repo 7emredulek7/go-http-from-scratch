@@ -1,4 +1,4 @@
-package requestline
+package request
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	requestLine, n, err := Parse([]byte("GET /coffee HTTP/1.1\r\nHost: example.com\r\n"))
+	requestLine, n, err := ParseRequestLine([]byte("GET /coffee HTTP/1.1\r\nHost: example.com\r\n"))
 	require.NoError(t, err)
 	require.NotNil(t, requestLine)
 	assert.Equal(t, 20, n)
@@ -18,14 +18,14 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseIncomplete(t *testing.T) {
-	requestLine, n, err := Parse([]byte("GET /coffee HTTP/1.1"))
+	requestLine, n, err := ParseRequestLine([]byte("GET /coffee HTTP/1.1"))
 	require.NoError(t, err)
 	assert.Nil(t, requestLine)
 	assert.Equal(t, 0, n)
 }
 
 func TestParseInvalidMethod(t *testing.T) {
-	requestLine, n, err := Parse([]byte("Get /coffee HTTP/1.1\r\n"))
+	requestLine, n, err := ParseRequestLine([]byte("Get /coffee HTTP/1.1\r\n"))
 	require.Error(t, err)
 	assert.Nil(t, requestLine)
 	assert.Equal(t, 0, n)

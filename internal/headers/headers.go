@@ -20,12 +20,6 @@ func (h Headers) Get(fieldName string) (fieldValue string, ok bool) {
 	return fieldValue, ok
 }
 
-func (h Headers) GetAll() map[string]string {
-	headers := make(map[string]string)
-	maps.Copy(headers, h)
-	return headers
-}
-
 func (h Headers) Set(fieldName, fieldValue string) error {
 	existingFieldValue, ok := h.Get(fieldName)
 	if ok {
@@ -40,6 +34,23 @@ func (h Headers) Set(fieldName, fieldValue string) error {
 	}
 	h[strings.ToLower(fieldName)] = fieldValue
 	return nil
+}
+
+func (h Headers) Replace(fieldName, fieldValue string) error {
+
+	_, ok := h.Get(fieldName)
+	if !ok {
+		return errors.New("header field does not exist")
+	}
+
+	h[strings.ToLower(fieldName)] = fieldValue
+	return nil
+}
+
+func (h Headers) GetAll() map[string]string {
+	headers := make(map[string]string)
+	maps.Copy(headers, h)
+	return headers
 }
 
 func isValidFieldNameChar(c rune) bool {
