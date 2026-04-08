@@ -47,6 +47,10 @@ func (h Headers) Replace(fieldName, fieldValue string) error {
 	return nil
 }
 
+func (h Headers) Remove(fieldName string) {
+	delete(h, strings.ToLower(fieldName))
+}
+
 func (h Headers) GetAll() map[string]string {
 	headers := make(map[string]string)
 	maps.Copy(headers, h)
